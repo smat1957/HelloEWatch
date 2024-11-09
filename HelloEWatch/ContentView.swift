@@ -589,8 +589,29 @@ struct ContentView: View {
     @State private var stages = ["1","2","3","4","5","6","7","8","9","10"]
     @State private var pages = ["1","2","3","4","5","6","7","8","9","10"]
     @State private var srchObjs = ["全て", "本で", "章で", "頁で"]
-    
+    func forApperarance(){
+        let navigationBarAppearance = UINavigationBarAppearance()
+        navigationBarAppearance.backgroundColor = UIColor(
+            red: 30/255,
+            green: 150/255,
+            blue: 234/255,
+            alpha: 1.0
+        )
+        navigationBarAppearance.titleTextAttributes = [
+            .foregroundColor: UIColor.white,
+            .font : UIFont.systemFont(ofSize: 30, weight: .bold)
+        ]
+        navigationBarAppearance.largeTitleTextAttributes = [
+            .foregroundColor: UIColor.white,
+            .font : UIFont.systemFont(ofSize: 30, weight: .bold)
+        ]
+        
+        UINavigationBar.appearance().standardAppearance = navigationBarAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navigationBarAppearance
+        UINavigationBar.appearance().compactAppearance = navigationBarAppearance
+    }
     init() {
+        self.forApperarance()
         self.dao.initial()
         words.removeAll()
         self.books = self.dao.distinct(field_name: "book")
@@ -616,11 +637,12 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack{
-            //Spacer()
-            HStack{
-                Button(action: {self.fileImport = true},
-                label:{Image(systemName: "gearshape").symbolRenderingMode(.monochrome)})
+        NavigationStack{
+            VStack{
+                //Spacer()
+                HStack{
+                    Button(action: {self.fileImport = true},
+                           label:{Image(systemName: "gearshape").symbolRenderingMode(.monochrome)})
                     .buttonBorderShape(.capsule)
                     .tint(.pink)
                     .buttonStyle(.borderedProminent)
@@ -654,95 +676,97 @@ struct ContentView: View {
                             print(error.localizedDescription)
                         }
                     }
-                onCancellation: {
-                    print("cancell success")
+                    onCancellation: {
+                        print("cancell success")
+                    }
+                    Text("\(words.count) 件")
+                    //Spacer()
+                    Text("：")
+                    //Spacer()
+                    Button("検索", action: search)
+                        .buttonBorderShape(.capsule)
+                        .tint(.pink)
+                        .buttonStyle(.borderedProminent)
+                        .padding()
+                    Picker(selection:$selectedSrch, label: Text("検索対象を選択")) {
+                        ForEach (self.srchObjs, id: \.self) { obj in
+                            Text(obj)
+                        }
+                    }.pickerStyle(.menu)
+                        .clipped()
+                        .contentShape(Rectangle())
+                        .onChange(of: self.selectedBook) { }
                 }
-                Text("\(words.count) 件")
-                //Spacer()
-                Text("：")
-                //Spacer()
-                Button("検索", action: search)
-                    .buttonBorderShape(.capsule)
-                    .tint(.pink)
-                    .buttonStyle(.borderedProminent)
+                HStack{
+                    Spacer()
+                    Picker(selection:$selectedBook, label: Text("本を選択")) {
+                        ForEach (self.books, id: \.self) { book in
+                            Text(book)
+                        }
+                    }.pickerStyle(.menu)
+                        .clipped()
+                        .contentShape(Rectangle())
+                        .onChange(of: self.selectedBook) {
+                            self.selectedSrch = "本で"
+                            self.search()
+                            self.stages = self.dao.distinct_onBook(field_name: "stage", book: self.selectedBook)
+                            self.pages = self.dao.distinct_onStageBook(field_name: "page", stage: self.selectedStage, book: self.selectedBook)
+                        }
+                    Spacer()
+                    Text("章")
+                    Picker(selection:$selectedStage, label: Text("章(Stage)を選択")) {
+                        ForEach (self.stages, id: \.self) { stage in
+                            Text(stage)
+                        }
+                    }.pickerStyle(.menu)
+                        .clipped()
+                        .contentShape(Rectangle())
+                        .onChange(of: self.selectedStage) {
+                            self.selectedSrch = "章で"
+                            self.search()
+                            self.pages = self.dao.distinct_onStageBook(field_name: "page", stage: self.selectedStage, book: self.selectedBook)
+                        }
+                    Spacer()
+                    Text("頁")
+                    Picker(selection:$selectedPage, label: Text("頁を選択")) {
+                        ForEach (self.pages, id: \.self) { page in
+                            Text(page)
+                        }
+                    }.pickerStyle(.menu)
+                        .clipped()
+                        .contentShape(Rectangle())
+                        .onChange(of: self.selectedPage) {
+                            self.selectedSrch = "頁で"
+                            self.search()
+                        }
+                    Spacer()
+                }
+                Spacer()
+                HStack{
+                    Spacer()
+                    Button(action: {
+                        if words.count != 0 {
+                            self.connector.selectedSrch = self.selectedSrch
+                            self.connector.current = 0
+                            self.connector.request = 0
+                            _ = self.connector.getCurrent()
+                        }
+                    }, label: {
+                        Image(systemName: "applewatch.and.arrow.forward")
+                            .frame(width: 50, height: 50)
+                    })
                     .padding()
-                Picker(selection:$selectedSrch, label: Text("検索対象を選択")) {
-                    ForEach (self.srchObjs, id: \.self) { obj in
-                        Text(obj)
-                    }
-                }.pickerStyle(.menu)
-                .clipped()
-                .contentShape(Rectangle())
-                .onChange(of: self.selectedBook) { }
-            }
-            HStack{
-                Spacer()
-                Picker(selection:$selectedBook, label: Text("本を選択")) {
-                    ForEach (self.books, id: \.self) { book in
-                        Text(book)
-                    }
-                }.pickerStyle(.menu)
-                .clipped()
-                .contentShape(Rectangle())
-                .onChange(of: self.selectedBook) {
-                    self.selectedSrch = "本で"
-                    self.search()
-                    self.stages = self.dao.distinct_onBook(field_name: "stage", book: self.selectedBook)
-                    self.pages = self.dao.distinct_onStageBook(field_name: "page", stage: self.selectedStage, book: self.selectedBook)
+                    .accentColor(Color.white)
+                    .background(Color(red: 30/255, green: 150/255, blue: 234/255))
+                    .font(.system(size: 30))
+                    .cornerRadius(50)
                 }
-                Spacer()
-                Text("章")
-                Picker(selection:$selectedStage, label: Text("章(Stage)を選択")) {
-                    ForEach (self.stages, id: \.self) { stage in
-                        Text(stage)
-                    }
-                }.pickerStyle(.menu)
-                .clipped()
-                .contentShape(Rectangle())
-                .onChange(of: self.selectedStage) {
-                    self.selectedSrch = "章で"
-                    self.search()
-                    self.pages = self.dao.distinct_onStageBook(field_name: "page", stage: self.selectedStage, book: self.selectedBook)
-                }
-                Spacer()
-                Text("頁")
-                Picker(selection:$selectedPage, label: Text("頁を選択")) {
-                    ForEach (self.pages, id: \.self) { page in
-                        Text(page)
-                    }
-                }.pickerStyle(.menu)
-                .clipped()
-                .contentShape(Rectangle())
-                .onChange(of: self.selectedPage) {
-                    self.selectedSrch = "頁で"
-                    self.search()
-                }
-                Spacer()
-            }
-            Spacer()
-            HStack{
-                Spacer()
-                Button(action: {
-                    if words.count != 0 {
-                        self.connector.selectedSrch = self.selectedSrch
-                        self.connector.current = 0
-                        self.connector.request = 0
-                        _ = self.connector.getCurrent()
-                    }
-                }, label: {
-                    Image(systemName: "applewatch.and.arrow.forward")
-                        .frame(width: 50, height: 50)
-                })
                 .padding()
-                .accentColor(Color.white)
-                .background(Color(red: 30/255, green: 150/255, blue: 234/255))
-                .font(.system(size: 30))
-                .cornerRadius(50)
-            }
-            .padding()
-            Spacer()
+                Spacer()
+            }.frame(maxHeight: .infinity)
+            .navigationTitle("WatchEWord App")
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 
