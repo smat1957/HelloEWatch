@@ -589,7 +589,7 @@ struct ContentView: View {
     @State private var stages = ["1","2","3","4","5","6","7","8","9","10"]
     @State private var pages = ["1","2","3","4","5","6","7","8","9","10"]
     @State private var srchObjs = ["全て", "本で", "章で", "頁で"]
-    func forApperarance(){
+    func forAppearance(){
         let navigationBarAppearance = UINavigationBarAppearance()
         navigationBarAppearance.backgroundColor = UIColor(
             red: 30/255,
@@ -611,7 +611,7 @@ struct ContentView: View {
         UINavigationBar.appearance().compactAppearance = navigationBarAppearance
     }
     init() {
-        self.forApperarance()
+        self.forAppearance()
         self.dao.initial()
         words.removeAll()
         self.books = self.dao.distinct(field_name: "book")
